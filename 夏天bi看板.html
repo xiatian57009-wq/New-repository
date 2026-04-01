@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>帖子运营 BI 工作台</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --panel-2: #f8fafc;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --primary: #2563eb;
+      --primary-soft: #dbeafe;
+      --good: #16a34a;
+      --good-soft: #dcfce7;
+      --warn: #d97706;
+      --warn-soft: #ffedd5;
+      --bad: #dc2626;
+      --bad-soft: #fee2e2;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: 0.5px;
+    }
+
+    .title-wrap p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .toolbar-right {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button, select, input[type="date"], input[type="text"] {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    button {
+      cursor: pointer;
+      transition: 0.2s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    button:hover { transform: translateY(-1px); }
+    .btn-primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .btn-soft {
+      background: var(--panel-2);
+    }
+
+    .grid-kpi {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .card, .section {
+      background: var(--panel);
+      border: 1px solid rgba(229,231,235,0.9);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .card {
+      padding: 16px;
+      min-height: 112px;
+    }
+
+    .card .label {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .card .value {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      border-radius: 999px;
+      padding: 5px 10px;
+      white-space: nowrap;
+    }
+
+    .good { color: var(--good); background: var(--good-soft); }
+    .warn { color: var(--warn); background: var(--warn-soft); }
+    .bad { color: var(--bad); background: var(--bad-soft); }
+    .info { color: var(--primary); background: var(--primary-soft); }
+
+    .two-col, .three-col {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .two-col { grid-template-columns: 1.2fr 0.8fr; }
+    .three-col { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .section {
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .section-desc {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .tips {
+      display: grid;
+      gap: 10px;
+    }
+
+    .tip {
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 14px;
+      line-height: 1.55;
+      border: 1px solid transparent;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .filter-group label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .chart-wrap {
+      height: 280px;
+      position: relative;
+      background: linear-gradient(180deg, #fff 0%, #fbfdff 100%);
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      padding: 10px;
+    }
+
+    .bars-wrap {
+      display: grid;
+      gap: 12px;
+    }
+
+    .bar-item {
+      display: grid;
+      grid-template-columns: 110px 1fr 80px;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    .bar-track {
+      height: 12px;
+      background: #eef2f7;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #60a5fa, #2563eb);
+      border-radius: 999px;
+    }
+
+    .matrix {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      background: #f8fafc;
+      z-index: 1;
+      font-weight: 600;
+    }
+
+    tbody tr:hover { background: #fafcff; }
+
+    .tag {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      font-size: 12px;
+      color: #334155;
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .mini-item {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fcfdff;
+    }
+
+    .mini-item h4 {
+      margin: 0 0 6px;
+      font-size: 14px;
+    }
+
+    .mini-meta {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 1280px) {
+      .grid-kpi { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .three-col { grid-template-columns: 1fr; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .app { padding: 14px; }
+      .grid-kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .filters { grid-template-columns: 1fr 1fr; }
+      .bar-item { grid-template-columns: 80px 1fr 60px; }
+      .toolbar { align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="toolbar">
+      <div class="title-wrap">
+        <h1>帖子运营 BI 工作台</h1>
+        <p>岗位：wj-特战队1-app运营专员｜本地单文件运行｜支持 CSV 导入、演示数据、趋势分析与明细筛选</p>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn-soft" id="loadDemoBtn">加载演示数据</button>
+        <label class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;cursor:pointer;">
+          导入 CSV
+          <input type="file" id="csvFile" accept=".csv" class="hidden" />
+        </label>
+        <button class="btn-soft" id="resetBtn">重置筛选</button>
+      </div>
+    </div>
+
+    <div class="filters section">
+      <div class="filter-group">
+        <label>时间范围</label>
+        <select id="rangeSelect">
+          <option value="all">全部</option>
+          <option value="today">今日</option>
+          <option value="7">近7天</option>
+          <option value="15">近15天</option>
+          <option value="30">近30天</option>
+          <option value="custom">自定义日期</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>开始日期</label>
+        <input type="date" id="startDate" />
+      </div>
+      <div class="filter-group">
+        <label>结束日期</label>
+        <input type="date" id="endDate" />
+      </div>
+      <div class="filter-group">
+        <label>帖子类型</label>
+        <select id="postTypeFilter">
+          <option value="all">全部</option>
+          <option value="普通帖">普通帖</option>
+          <option value="秘闻帖">秘闻帖</option>
+          <option value="包养帖">包养帖</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>标题策略</label>
+        <select id="strategyFilter">
+          <option value="all">全部</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>图片方向</label>
+        <select id="imageFilter">
+          <option value="all">全部</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>发布状态</label>
+        <select id="publishFilter">
+          <option value="all">全部</option>
+          <option value="1">发布成功</option>
+          <option value="0">发布失败</option>
+        </select>
+      </div>
+      <div class="filter-group" style="grid-column: span 2;">
+        <label>搜索标题 / 帖子ID</label>
+        <input type="text" id="keywordFilter" placeholder="输入标题关键词或帖子ID" />
+      </div>
+      <div class="filter-group" style="grid-column: span 2;">
+        <label>数据状态</label>
+        <div id="statusBox" style="padding:10px 12px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:13px;">当前为演示状态，建议导入真实 CSV 数据。</div>
+      </div>
+    </div>
+
+    <div class="grid-kpi" id="kpiGrid"></div>
+
+    <div class="two-col">
+      <div class="section">
+        <div class="section-header">
+          <div>
+            <h3 class="section-title">趋势分析</h3>
+            <p class="section-desc">发帖量、浏览量、评论量按日期变化</p>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="trendCanvas"></canvas></div>
+        <div class="footer-note">提示：点击趋势图中的日期点可联动到明细表筛选同一天数据。</div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div>
+            <h3 class="section-title">自动提醒与运营建议</h3>
+            <p class="section-desc">根据目标完成率和近 7 天表现自动生成</p>
+          </div>
+        </div>
+        <div class="tips" id="tipsBox"></div>
+      </div>
+    </div>
+
+    <div class="three-col">
+      <div class="section">
+        <div class="section-header">
+          <div>
+            <h3 class="section-title">帖子类型分析</h3>
+            <p class="section-desc">普通帖 / 秘闻帖 / 包养帖</p>
+          </div>
+        </div>
+        <div class="bars-wrap" id="postTypeBars"></div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div>
+            <h3 class="section-title">标题策略分析</h3>
+            <p class="section-desc">按平均浏览量比较不同标题策略</p>
+          </div>
+        </div>
+        <div class="bars-wrap" id="strategyBars"></div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div>
+            <h3 class="section-title">图片方向分析</h3>
+            <p class="section-desc">按平均浏览量比较不同图片方向</p>
+          </div>
+        </div>
+        <div class="bars-wrap" id="imageBars"></div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="section">
+        <div class="section-header">
+          <div>
+            <h3 class="section-title">标题 × 图片组合分析</h3>
+            <p class="section-desc">单元格数值为该组合的平均浏览量</p>
+          </div>
+        </div>
+        <div class="matrix">
+          <table id="matrixTable"></table>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div>
+            <h3 class="section-title">高表现 / 低表现帖子</h3>
+            <p class="section-desc">基于浏览量与评论量快速查看样本</p>
+          </div>
+        </div>
+        <div class="mini-list" id="topPosts"></div>
+        <div style="height:12px"></div>
+        <div class="mini-list" id="lowPosts"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div>
+          <h3 class="section-title">发帖明细表</h3>
+          <p class="section-desc">支持筛选、搜索与排序；CTR 会根据点击量 / 曝光量自动计算</p>
+        </div>
+      </div>
+      <div class="matrix" style="max-height: 520px;">
+        <table id="detailTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TARGETS = {
+      totalPosts: 12,
+      secretPosts: 3,
+      patronPosts: 1,
+      successRate: 0.9,
+    };
+
+    const DEFAULT_STRATEGIES = ["悬念型", "猎奇型", "反差型", "直给型", "情绪型", "故事型"];
+    const DEFAULT_IMAGES = ["人物特写", "氛围感", "高冲突画面", "文字封面", "多元素拼图", "普通配图"];
+    const POST_TYPES = ["普通帖", "秘闻帖", "包养帖"];
+
+    let rawData = [];
+    let filteredData = [];
+    let clickedDate = null;
+
+    const els = {
+      kpiGrid: document.getElementById('kpiGrid'),
+      rangeSelect: document.getElementById('rangeSelect'),
+      startDate: document.getElementById('startDate'),
+      endDate: document.getElementById('endDate'),
+      postTypeFilter: document.getElementById('postTypeFilter'),
+      strategyFilter: document.getElementById('strategyFilter'),
+      imageFilter: document.getElementById('imageFilter'),
+      publishFilter: document.getElementById('publishFilter'),
+      keywordFilter: document.getElementById('keywordFilter'),
+      tipsBox: document.getElementById('tipsBox'),
+      postTypeBars: document.getElementById('postTypeBars'),
+      strategyBars: document.getElementById('strategyBars'),
+      imageBars: document.getElementById('imageBars'),
+      matrixTable: document.getElementById('matrixTable'),
+      topPosts: document.getElementById('topPosts'),
+      lowPosts: document.getElementById('lowPosts'),
+      detailTable: document.getElementById('detailTable'),
+      csvFile: document.getElementById('csvFile'),
+      loadDemoBtn: document.getElementById('loadDemoBtn'),
+      resetBtn: document.getElementById('resetBtn'),
+      statusBox: document.getElementById('statusBox'),
+      trendCanvas: document.getElementById('trendCanvas'),
+    };
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function formatDate(date) {
+      const y = date.getFullYear();
+      const m = pad(date.getMonth() + 1);
+      const d = pad(date.getDate());
+      return `${y}-${m}-${d}`;
+    }
+    function parseDate(value) {
+      if (!value) return null;
+      const d = new Date(value);
+      return isNaN(d.getTime()) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+    function toNumber(value, fallback = 0) {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : fallback;
+    }
+    function pct(n) {
+      return `${(n * 100).toFixed(1)}%`;
+    }
+    function num(n) {
+      return Number(n || 0).toLocaleString('zh-CN');
+    }
+    function avg(sum, count) {
+      return count ? sum / count : 0;
+    }
+    function unique(arr) {
+      return [...new Set(arr.filter(Boolean))];
+    }
+
+    function seedDemoData() {
+      const titles = [
+        "她的聊天记录一公开，结果完全反转",
+        "看似普通的一句话，背后信息量太大",
+        "这张封面一改，浏览量直接翻倍",
+        "原来这种写法才是真正吸引人",
+        "没想到评论区比正文还精彩",
+        "一个细节，让整篇帖子效果完全不同",
+        "这类标题最近为什么突然吃香？",
+        "发了 3 次才找到最有效的图文组合",
+        "这个方向看着普通，实际特别能带互动",
+        "她的故事没写完，评论区先炸了"
+      ];
+      const rows = [];
+      const today = new Date();
+      for (let i = 0; i < 42; i++) {
+        const day = new Date(today);
+        day.setDate(today.getDate() - i);
+        const dailyCount = 8 + (i % 7);
+        for (let j = 0; j < dailyCount; j++) {
+          const postType = POST_TYPES[(i + j) % POST_TYPES.length];
+          const titleStrategy = DEFAULT_STRATEGIES[(i + j * 2) % DEFAULT_STRATEGIES.length];
+          const imageStyle = DEFAULT_IMAGES[(i * 2 + j) % DEFAULT_IMAGES.length];
+          const isPublished = Math.random() > 0.12 ? 1 : 0;
+          const base = postType === '秘闻帖' ? 1200 : postType === '包养帖' ? 950 : 700;
+          const stratBonus = { '悬念型': 180, '猎奇型': 260, '反差型': 200, '直给型': 90, '情绪型': 150, '故事型': 170 }[titleStrategy] || 0;
+          const imgBonus = { '人物特写': 160, '氛围感': 120, '高冲突画面': 220, '文字封面': 80, '多元素拼图': 100, '普通配图': 30 }[imageStyle] || 0;
+          const views = isPublished ? Math.round(base + stratBonus + imgBonus + Math.random() * 900) : Math.round(Math.random() * 100);
+          const comments = isPublished ? Math.round(views * (0.02 + Math.random() * 0.03)) : 0;
+          const impressions = isPublished ? Math.round(views * (2.3 + Math.random() * 1.4)) : 0;
+          const clicks = isPublished ? Math.min(views, Math.round(impressions * (0.15 + Math.random() * 0.12))) : 0;
+          rows.push({
+            date: formatDate(day),
+            post_id: `P${formatDate(day).replace(/-/g, '')}${pad(j + 1)}`,
+            title: titles[(i + j) % titles.length],
+            post_type: postType,
+            title_strategy: titleStrategy,
+            image_style: imageStyle,
+            is_published: isPublished,
+            views,
+            comments,
+            likes: Math.round(comments * (1.1 + Math.random() * 2.2)),
+            shares: Math.round(comments * Math.random() * 0.5),
+            favorites: Math.round(comments * (0.3 + Math.random() * 0.9)),
+            impressions,
+            clicks,
+            ctr: impressions ? clicks / impressions : 0,
+            remark: isPublished ? '' : '发布失败，待复盘',
+          });
+        }
+      }
+      return rows.sort((a, b) => a.date < b.date ? 1 : -1);
+    }
+
+    function normalizeRow(row, index = 0) {
+      const date = parseDate(row.date);
+      if (!date) throw new Error(`第 ${index + 1} 行 date 无效`);
+      const postType = row.post_type?.trim();
+      if (!POST_TYPES.includes(postType)) throw new Error(`第 ${index + 1} 行 post_type 不在允许范围内`);
+      const isPublished = String(row.is_published).trim();
+      if (!["0", "1", 0, 1].includes(row.is_published) && !["0", "1"].includes(isPublished)) {
+        throw new Error(`第 ${index + 1} 行 is_published 只能填写 0 或 1`);
+      }
+      const titleStrategy = row.title_strategy?.trim() || "未分类";
+      const imageStyle = row.image_style?.trim() || "未分类";
+      return {
+        date: formatDate(date),
+        post_id: row.post_id?.trim() || `AUTO_${index + 1}`,
+        title: row.title?.trim() || '未命名帖子',
+        post_type: postType,
+        title_strategy: titleStrategy,
+        image_style: imageStyle,
+        is_published: Number(isPublished),
+        views: toNumber(row.views),
+        comments: toNumber(row.comments),
+        likes: toNumber(row.likes),
+        shares: toNumber(row.shares),
+        favorites: toNumber(row.favorites),
+        impressions: toNumber(row.impressions),
+        clicks: toNumber(row.clicks),
+        ctr: toNumber(row.impressions) > 0 ? toNumber(row.clicks) / toNumber(row.impressions) : 0,
+        remark: row.remark?.trim() || '',
+      };
+    }
+
+    function parseCSV(text) {
+      const rows = [];
+      let row = [];
+      let cell = '';
+      let inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const next = text[i + 1];
+        if (char === '"') {
+          if (inQuotes && next === '"') {
+            cell += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          row.push(cell);
+          cell = '';
+        } else if ((char === '\n' || char === '\r') && !inQuotes) {
+          if (char === '\r' && next === '\n') i++;
+          row.push(cell);
+          if (row.some(v => v !== '')) rows.push(row);
+          row = [];
+          cell = '';
+        } else {
+          cell += char;
+        }
+      }
+      if (cell.length > 0 || row.length > 0) {
+        row.push(cell);
+        if (row.some(v => v !== '')) rows.push(row);
+      }
+      if (!rows.length) return [];
+      const headers = rows[0].map(h => h.trim());
+      return rows.slice(1).map((r) => {
+        const obj = {};
+        headers.forEach((h, idx) => obj[h] = (r[idx] || '').trim());
+        return obj;
+      });
+    }
+
+    function getDateRange() {
+      const dates = rawData.map(r => r.date).sort();
+      if (!dates.length) return { min: null, max: null };
+      return { min: dates[0], max: dates[dates.length - 1] };
+    }
+
+    function setStatus(text, tone = 'info') {
+      const cls = tone === 'bad' ? 'bad' : tone === 'good' ? 'good' : tone === 'warn' ? 'warn' : 'info';
+      els.statusBox.innerHTML = `<span class="badge ${cls}">${text}</span>`;
+    }
+
+    function initFilterOptions() {
+      const strategies = unique([...DEFAULT_STRATEGIES, ...rawData.map(r => r.title_strategy)]).sort();
+      const images = unique([...DEFAULT_IMAGES, ...rawData.map(r => r.image_style)]).sort();
+
+      els.strategyFilter.innerHTML = '<option value="all">全部</option>' + strategies.map(v => `<option value="${v}">${v}</option>`).join('');
+      els.imageFilter.innerHTML = '<option value="all">全部</option>' + images.map(v => `<option value="${v}">${v}</option>`).join('');
+
+      const { min, max } = getDateRange();
+      els.startDate.value = min || '';
+      els.endDate.value = max || '';
+    }
+
+    function applyFilters() {
+      const range = els.rangeSelect.value;
+      const postType = els.postTypeFilter.value;
+      const strategy = els.strategyFilter.value;
+      const image = els.imageFilter.value;
+      const publish = els.publishFilter.value;
+      const keyword = els.keywordFilter.value.trim().toLowerCase();
+
+      let start = els.startDate.value ? parseDate(els.startDate.value) : null;
+      let end = els.endDate.value ? parseDate(els.endDate.value) : null;
+      const allDates = rawData.map(r => parseDate(r.date)).filter(Boolean).sort((a, b) => a - b);
+      const maxDate = allDates.length ? allDates[allDates.length - 1] : new Date();
+
+      if (range === 'today') {
+        start = new Date(maxDate);
+        end = new Date(maxDate);
+      } else if (["7", "15", "30"].includes(range)) {
+        end = new Date(maxDate);
+        start = new Date(maxDate);
+        start.setDate(end.getDate() - (Number(range) - 1));
+      }
+
+      filteredData = rawData.filter((row) => {
+        const d = parseDate(row.date);
+        if (start && d < start) return false;
+        if (end && d > end) return false;
+        if (clickedDate && row.date !== clickedDate) return false;
+        if (postType !== 'all' && row.post_type !== postType) return false;
+        if (strategy !== 'all' && row.title_strategy !== strategy) return false;
+        if (image !== 'all' && row.image_style !== image) return false;
+        if (publish !== 'all' && String(row.is_published) !== publish) return false;
+        if (keyword && !(row.title.toLowerCase().includes(keyword) || row.post_id.toLowerCase().includes(keyword))) return false;
+        return true;
+      }).sort((a, b) => (a.date < b.date ? 1 : -1));
+
+      renderAll();
+    }
+
+    function kpiCard(label, value, subLeft, badgeHtml) {
+      return `<div class="card"><div class="label">${label}</div><div class="value">${value}</div><div class="meta-row"><span>${subLeft}</span>${badgeHtml}</div></div>`;
+    }
+
+    function getSummary(data) {
+      const total = data.length;
+      const successRows = data.filter(r => r.is_published === 1);
+      const success = successRows.length;
+      const failed = total - success;
+      const views = successRows.reduce((s, r) => s + r.views, 0);
+      const comments = successRows.reduce((s, r) => s + r.comments, 0);
+      const secret = data.filter(r => r.post_type === '秘闻帖').length;
+      const patron = data.filter(r => r.post_type === '包养帖').length;
+      const impressions = successRows.reduce((s, r) => s + r.impressions, 0);
+      const clicks = successRows.reduce((s, r) => s + r.clicks, 0);
+      return {
+        total, success, failed, views, comments, secret, patron,
+        avgViews: avg(views, success),
+        avgComments: avg(comments, success),
+        successRate: avg(success, total),
+        ctr: impressions ? clicks / impressions : 0,
+      };
+    }
+
+    function getBadgeByProgress(current, target) {
+      const ratio = target ? current / target : 0;
+      if (ratio >= 1) return `<span class="badge good">已达标 ${Math.round(ratio * 100)}%</span>`;
+      if (ratio >= 0.7) return `<span class="badge warn">接近目标 ${Math.round(ratio * 100)}%</span>`;
+      return `<span class="badge bad">未达标 ${Math.round(ratio * 100)}%</span>`;
+    }
+
+    function renderKpis() {
+      const s = getSummary(filteredData);
+      els.kpiGrid.innerHTML = [
+        kpiCard('今日/当前筛选发帖总数', num(s.total), `目标 ${TARGETS.totalPosts}`, getBadgeByProgress(s.total, TARGETS.totalPosts)),
+        kpiCard('成功发布数', num(s.success), `失败 ${num(s.failed)}`, `<span class="badge info">成功率 ${pct(s.successRate)}</span>`),
+        kpiCard('秘闻帖数量', num(s.secret), `目标 ${TARGETS.secretPosts}`, getBadgeByProgress(s.secret, TARGETS.secretPosts)),
+        kpiCard('包养帖数量', num(s.patron), `目标 ${TARGETS.patronPosts}`, getBadgeByProgress(s.patron, TARGETS.patronPosts)),
+        kpiCard('总浏览量', num(s.views), `平均单帖 ${num(s.avgViews.toFixed(0))}`, `<span class="badge info">CTR ${s.ctr ? pct(s.ctr) : '--'}</span>`),
+        kpiCard('总评论量', num(s.comments), `平均单帖 ${num(s.avgComments.toFixed(1))}`, `<span class="badge info">互动表现</span>`),
+        kpiCard('发布成功率', pct(s.successRate), `目标 ${pct(TARGETS.successRate)}`, s.successRate >= TARGETS.successRate ? '<span class="badge good">达标</span>' : '<span class="badge bad">待优化</span>'),
+        kpiCard('平均浏览量', num(s.avgViews.toFixed(0)), '按成功发布帖子计算', '<span class="badge info">效率指标</span>'),
+        kpiCard('平均评论量', num(s.avgComments.toFixed(1)), '按成功发布帖子计算', '<span class="badge info">互动指标</span>'),
+        kpiCard('当前筛选样本数', num(filteredData.length), clickedDate ? `联动日期 ${clickedDate}` : '未启用日期联动', clickedDate ? '<span class="badge warn">已联动</span>' : '<span class="badge info">全量</span>'),
+      ].join('');
+    }
+
+    function groupBy(arr, keyFn) {
+      return arr.reduce((acc, item) => {
+        const key = keyFn(item);
+        (acc[key] ||= []).push(item);
+        return acc;
+      }, {});
+    }
+
+    function renderBars(container, items, formatter = (v) => num(v.toFixed ? v.toFixed(0) : v)) {
+      if (!items.length) {
+        container.innerHTML = '<div class="footer-note">暂无数据</div>';
+        return;
+      }
+      const max = Math.max(...items.map(i => i.value), 1);
+      container.innerHTML = items.map(i => `
+        <div class="bar-item">
+          <div>${i.label}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${(i.value / max) * 100}%"></div></div>
+          <div style="text-align:right">${formatter(i.value)}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderAnalysisBars() {
+      const typeGroups = POST_TYPES.map(type => {
+        const rows = filteredData.filter(r => r.post_type === type && r.is_published === 1);
+        return { label: type, value: avg(rows.reduce((s, r) => s + r.views, 0), rows.length) };
+      });
+      renderBars(els.postTypeBars, typeGroups, v => `${num(Math.round(v))}`);
+
+      const strategyGroups = Object.entries(groupBy(filteredData.filter(r => r.is_published === 1), r => r.title_strategy))
+        .map(([label, rows]) => ({ label, value: avg(rows.reduce((s, r) => s + r.views, 0), rows.length) }))
+        .sort((a, b) => b.value - a.value);
+      renderBars(els.strategyBars, strategyGroups, v => `${num(Math.round(v))}`);
+
+      const imageGroups = Object.entries(groupBy(filteredData.filter(r => r.is_published === 1), r => r.image_style))
+        .map(([label, rows]) => ({ label, value: avg(rows.reduce((s, r) => s + r.views, 0), rows.length) }))
+        .sort((a, b) => b.value - a.value);
+      renderBars(els.imageBars, imageGroups, v => `${num(Math.round(v))}`);
+    }
+
+    function renderTips() {
+      const s = getSummary(filteredData);
+      const recent7 = getRecentDaysSummary(7);
+      const messages = [];
+
+      if (s.total < TARGETS.totalPosts) messages.push({ tone: 'bad', text: `今日/当前筛选发帖数量未达标，还差 ${TARGETS.totalPosts - s.total} 篇。` });
+      else messages.push({ tone: 'good', text: `发帖总量已达标，当前完成 ${s.total} 篇。` });
+
+      if (s.secret < TARGETS.secretPosts) messages.push({ tone: 'warn', text: `秘闻帖数量偏低，建议补充 ${TARGETS.secretPosts - s.secret} 篇猎奇向内容。` });
+      if (s.patron < TARGETS.patronPosts) messages.push({ tone: 'warn', text: `包养帖数量未达标，建议至少补 1 篇保持节奏。` });
+      if (s.successRate < TARGETS.successRate) messages.push({ tone: 'bad', text: `当前发布成功率为 ${pct(s.successRate)}，低于目标 ${pct(TARGETS.successRate)}，建议复盘失败原因。` });
+      if (recent7 && s.avgViews < recent7.avgViews) messages.push({ tone: 'warn', text: `平均浏览量低于近 7 天基线（当前 ${num(s.avgViews.toFixed(0))}，近 7 天 ${num(recent7.avgViews.toFixed(0))}），建议优化标题或图片方向。` });
+
+      const bestStrategy = Object.entries(groupBy(filteredData.filter(r => r.is_published === 1), r => r.title_strategy))
+        .map(([k, rows]) => ({ key: k, avgViews: avg(rows.reduce((s, r) => s + r.views, 0), rows.length) }))
+        .sort((a, b) => b.avgViews - a.avgViews)[0];
+      if (bestStrategy) messages.push({ tone: 'info', text: `当前样本中「${bestStrategy.key}」标题平均浏览量最高，建议继续增加占比。` });
+
+      const bestImage = Object.entries(groupBy(filteredData.filter(r => r.is_published === 1), r => r.image_style))
+        .map(([k, rows]) => ({ key: k, avgViews: avg(rows.reduce((s, r) => s + r.views, 0), rows.length) }))
+        .sort((a, b) => b.avgViews - a.avgViews)[0];
+      if (bestImage) messages.push({ tone: 'info', text: `当前图片方向中「${bestImage.key}」表现更强，可优先作为封面主方向。` });
+
+      els.tipsBox.innerHTML = messages.slice(0, 6).map(item => `<div class="tip ${item.tone}">${item.text}</div>`).join('') || '<div class="tip info">暂无提醒</div>';
+    }
+
+    function getRecentDaysSummary(days) {
+      const all = rawData.map(r => r.date).sort();
+      if (!all.length) return null;
+      const max = parseDate(all[all.length - 1]);
+      const min = new Date(max);
+      min.setDate(max.getDate() - (days - 1));
+      const rows = rawData.filter(r => {
+        const d = parseDate(r.date);
+        return d >= min && d <= max;
+      });
+      return getSummary(rows);
+    }
+
+    function renderMatrix() {
+      const strategies = unique([...DEFAULT_STRATEGIES, ...filteredData.map(r => r.title_strategy)]);
+      const images = unique([...DEFAULT_IMAGES, ...filteredData.map(r => r.image_style)]);
+      const bodyRows = strategies.map(strategy => {
+        const cells = images.map(image => {
+          const rows = filteredData.filter(r => r.is_published === 1 && r.title_strategy === strategy && r.image_style === image);
+          const v = avg(rows.reduce((s, r) => s + r.views, 0), rows.length);
+          const bg = rows.length ? `background: rgba(37,99,235,${Math.min(0.12 + v / 3000, 0.45)});` : '';
+          return `<td style="${bg}">${rows.length ? num(Math.round(v)) : '--'}</td>`;
+        }).join('');
+        return `<tr><th>${strategy}</th>${cells}</tr>`;
+      }).join('');
+      els.matrixTable.innerHTML = `<thead><tr><th>标题策略 \ 图片方向</th>${images.map(i => `<th>${i}</th>`).join('')}</tr></thead><tbody>${bodyRows}</tbody>`;
+    }
+
+    function renderPostLists() {
+      const published = filteredData.filter(r => r.is_published === 1);
+      const top = [...published].sort((a, b) => (b.views + b.comments * 25) - (a.views + a.comments * 25)).slice(0, 5);
+      const low = [...filteredData].sort((a, b) => (a.views + a.comments * 25) - (b.views + b.comments * 25)).slice(0, 5);
+
+      const renderItem = (title, rows, type) => `
+        <div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">${title}</div>
+          <div class="mini-list">
+            ${rows.map(r => `
+              <div class="mini-item">
+                <h4>${r.title}</h4>
+                <div class="mini-meta">
+                  <span>${r.post_id}</span>
+                  <span>${r.date}</span>
+                  <span>${r.post_type}</span>
+                  <span>浏览 ${num(r.views)}</span>
+                  <span>评论 ${num(r.comments)}</span>
+                  <span class="tag">${r.title_strategy}</span>
+                </div>
+              </div>
+            `).join('') || '<div class="footer-note">暂无数据</div>'}
+          </div>
+        </div>`;
+
+      els.topPosts.innerHTML = renderItem('高表现帖子 TOP 5', top, 'top');
+      els.lowPosts.innerHTML = renderItem('低表现帖子 TOP 5', low, 'low');
+    }
+
+    function renderDetailTable() {
+      const rows = filteredData;
+      const headers = [
+        'date','post_id','title','post_type','title_strategy','image_style','is_published','views','comments','likes','shares','favorites','impressions','clicks','ctr','remark'
+      ];
+      const labels = {
+        date: '日期', post_id: '帖子ID', title: '帖子标题', post_type: '帖子类型', title_strategy: '标题策略', image_style: '图片方向', is_published: '发布状态', views: '浏览量', comments: '评论量', likes: '点赞量', shares: '分享量', favorites: '收藏量', impressions: '曝光量', clicks: '点击量', ctr: 'CTR', remark: '备注'
+      };
+      const thead = `<thead><tr>${headers.map(h => `<th>${labels[h]}</th>`).join('')}</tr></thead>`;
+      const tbody = `<tbody>${rows.map(r => `<tr>
+        <td>${r.date}</td>
+        <td>${r.post_id}</td>
+        <td>${r.title}</td>
+        <td><span class="tag">${r.post_type}</span></td>
+        <td>${r.title_strategy}</td>
+        <td>${r.image_style}</td>
+        <td>${r.is_published ? '<span class="badge good">成功</span>' : '<span class="badge bad">失败</span>'}</td>
+        <td>${num(r.views)}</td>
+        <td>${num(r.comments)}</td>
+        <td>${num(r.likes)}</td>
+        <td>${num(r.shares)}</td>
+        <td>${num(r.favorites)}</td>
+        <td>${num(r.impressions)}</td>
+        <td>${num(r.clicks)}</td>
+        <td>${r.impressions ? pct(r.ctr) : '--'}</td>
+        <td>${r.remark || ''}</td>
+      </tr>`).join('')}</tbody>`;
+      els.detailTable.innerHTML = thead + tbody;
+    }
+
+    function drawTrendChart() {
+      const canvas = els.trendCanvas;
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+
+      const grouped = Object.entries(groupBy(filteredData, r => r.date)).sort((a, b) => a[0].localeCompare(b[0]));
+      if (!grouped.length) {
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('暂无趋势数据', 20, 30);
+        return;
+      }
+
+      const labels = grouped.map(([date]) => date);
+      const posts = grouped.map(([, rows]) => rows.length);
+      const views = grouped.map(([, rows]) => rows.filter(r => r.is_published === 1).reduce((s, r) => s + r.views, 0));
+      const comments = grouped.map(([, rows]) => rows.filter(r => r.is_published === 1).reduce((s, r) => s + r.comments, 0));
+      const maxValue = Math.max(...posts, ...views.map(v => v / 200), ...comments.map(v => v / 10), 1);
+
+      const m = { left: 42, right: 20, top: 20, bottom: 42 };
+      const w = rect.width - m.left - m.right;
+      const h = rect.height - m.top - m.bottom;
+
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const y = m.top + (h / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(m.left, y);
+        ctx.lineTo(m.left + w, y);
+        ctx.stroke();
+      }
+
+      function drawLine(data, color, scale, label) {
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        data.forEach((value, i) => {
+          const x = m.left + (w * i) / Math.max(data.length - 1, 1);
+          const y = m.top + h - ((value / scale) / maxValue) * h;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        data.forEach((value, i) => {
+          const x = m.left + (w * i) / Math.max(data.length - 1, 1);
+          const y = m.top + h - ((value / scale) / maxValue) * h;
+          ctx.beginPath();
+          ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      drawLine(posts, '#2563eb', 1, '发帖数');
+      drawLine(views, '#16a34a', 200, '浏览量/200');
+      drawLine(comments, '#d97706', 10, '评论量/10');
+
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '12px sans-serif';
+      labels.forEach((label, i) => {
+        const x = m.left + (w * i) / Math.max(labels.length - 1, 1);
+        if (labels.length > 12 && i % Math.ceil(labels.length / 12) !== 0 && i !== labels.length - 1) return;
+        ctx.save();
+        ctx.translate(x, rect.height - 8);
+        ctx.rotate(-0.25);
+        ctx.fillText(label.slice(5), -12, 0);
+        ctx.restore();
+      });
+
+      const legends = [
+        { color: '#2563eb', text: '发帖数' },
+        { color: '#16a34a', text: '浏览量 ÷ 200' },
+        { color: '#d97706', text: '评论量 ÷ 10' },
+      ];
+      legends.forEach((item, i) => {
+        const x = m.left + i * 130;
+        ctx.fillStyle = item.color;
+        ctx.fillRect(x, 6, 14, 8);
+        ctx.fillStyle = '#475569';
+        ctx.fillText(item.text, x + 20, 14);
+      });
+
+      canvas.onclick = (e) => {
+        const bounds = canvas.getBoundingClientRect();
+        const x = e.clientX - bounds.left;
+        const index = Math.round(((x - m.left) / w) * (labels.length - 1));
+        if (index >= 0 && index < labels.length) {
+          clickedDate = clickedDate === labels[index] ? null : labels[index];
+          renderAll();
+        }
+      };
+    }
+
+    function renderAll() {
+      renderKpis();
+      renderTips();
+      renderAnalysisBars();
+      renderMatrix();
+      renderPostLists();
+      renderDetailTable();
+      drawTrendChart();
+    }
+
+    function resetFilters() {
+      clickedDate = null;
+      els.rangeSelect.value = 'all';
+      els.postTypeFilter.value = 'all';
+      els.strategyFilter.value = 'all';
+      els.imageFilter.value = 'all';
+      els.publishFilter.value = 'all';
+      els.keywordFilter.value = '';
+      const { min, max } = getDateRange();
+      els.startDate.value = min || '';
+      els.endDate.value = max || '';
+      applyFilters();
+    }
+
+    function validateCSVHeaders(rows) {
+      if (!rows.length) throw new Error('CSV 内容为空');
+      const required = ['date', 'post_id', 'title', 'post_type', 'is_published', 'views', 'comments'];
+      const headers = Object.keys(rows[0]);
+      const missing = required.filter(h => !headers.includes(h));
+      if (missing.length) throw new Error(`CSV 缺少必要字段：${missing.join(', ')}`);
+    }
+
+    els.loadDemoBtn.addEventListener('click', () => {
+      rawData = seedDemoData();
+      initFilterOptions();
+      resetFilters();
+      setStatus(`已加载演示数据，共 ${rawData.length} 条`, 'good');
+    });
+
+    els.csvFile.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!file.name.toLowerCase().endsWith('.csv')) {
+        setStatus('请选择 CSV 文件', 'bad');
+        return;
+      }
+      try {
+        const text = await file.text();
+        const rows = parseCSV(text);
+        validateCSVHeaders(rows);
+        rawData = rows.map((r, idx) => normalizeRow(r, idx));
+        initFilterOptions();
+        resetFilters();
+        setStatus(`导入成功，共读取 ${rawData.length} 条数据`, 'good');
+      } catch (err) {
+        console.error(err);
+        setStatus(err.message || 'CSV 导入失败', 'bad');
+      } finally {
+        e.target.value = '';
+      }
+    });
+
+    [
+      els.rangeSelect, els.startDate, els.endDate, els.postTypeFilter,
+      els.strategyFilter, els.imageFilter, els.publishFilter, els.keywordFilter
+    ].forEach(el => el.addEventListener('input', () => {
+      if (el !== els.rangeSelect && clickedDate) clickedDate = null;
+      applyFilters();
+    }));
+
+    els.resetBtn.addEventListener('click', resetFilters);
+    window.addEventListener('resize', drawTrendChart);
+
+    rawData = seedDemoData();
+    initFilterOptions();
+    resetFilters();
+    setStatus(`当前为演示状态，共 ${rawData.length} 条样本。导入 CSV 后会自动替换。`, 'info');
+  </script>
+</body>
+</html>
