@@ -340,7 +340,7 @@
     <div class="toolbar">
       <div class="title-wrap">
         <h1>帖子运营 BI 工作台</h1>
-        <p>岗位：wj-特战队1-app运营专员｜本地单文件运行｜支持 CSV 导入、演示数据、趋势分析与明细筛选</p>
+        <p>岗位：wj-特战队1-app运营专员｜本地单文件运行｜支持智能 CSV 导入、中文表头自动识别、演示数据、趋势分析与明细筛选</p>
       </div>
       <div class="toolbar-right">
         <button class="btn-soft" id="loadDemoBtn">加载演示数据</button>
@@ -627,38 +627,145 @@
       return rows.sort((a, b) => a.date < b.date ? 1 : -1);
     }
 
-    function normalizeRow(row, index = 0) {
-      const date = parseDate(row.date);
-      if (!date) throw new Error(`第 ${index + 1} 行 date 无效`);
-      const postType = row.post_type?.trim();
-      if (!POST_TYPES.includes(postType)) throw new Error(`第 ${index + 1} 行 post_type 不在允许范围内`);
-      const isPublished = String(row.is_published).trim();
-      if (!["0", "1", 0, 1].includes(row.is_published) && !["0", "1"].includes(isPublished)) {
-        throw new Error(`第 ${index + 1} 行 is_published 只能填写 0 或 1`);
+    function normalizeHeaderName(name) {
+      return String(name || '')
+        .replace(/^﻿/, '')
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_\-\/（）()【】\[\]]+/g, '');
+    }
+
+    const HEADER_ALIASES = {
+      date: ['date', '日期', '创建时间', '发布时间', '发帖时间', '时间', 'createdat', 'createtime', 'publishdate', 'publish_time', '更新时间'],
+      post_id: ['post_id', 'postid', '帖子id', '贴子id', '内容id', '文章id', '编号', 'id', '资源id'],
+      title: ['title', '标题', '帖子标题', '内容标题', '内容', '文案', '资源类型名字', '资源名称', '名称'],
+      post_type: ['post_type', 'posttype', '帖子类型', '类型', '分类', '资源分类', '栏目'],
+      title_strategy: ['title_strategy', 'titlestrategy', '标题策略', '标题方案', '标题风格', '策略', '文案策略'],
+      image_style: ['image_style', 'imagestyle', '图片方向', '配图方向', '图片风格', '封面方向', '图片类型', '封面类型'],
+      is_published: ['is_published', 'ispublished', '发布状态', '是否发布成功', '是否成功', '成功状态', '状态', '审核状态', '上线状态'],
+      views: ['views', 'view', '浏览量', '阅读量', '点击量', '访问量', '曝光后点击量'],
+      comments: ['comments', 'comment', '评论量', '评论数', '回复量', '回复数'],
+      likes: ['likes', '点赞量', '点赞数'],
+      shares: ['shares', '分享量', '分享数', '转发量', '转发数'],
+      favorites: ['favorites', '收藏量', '收藏数'],
+      impressions: ['impressions', '曝光量', '展示量', '曝光次数'],
+      clicks: ['clicks', '点击次数', '点击数'],
+      remark: ['remark', '备注', '拒绝原因', '原因', '说明']
+    };
+
+    function findHeaderByAliases(headers, aliases) {
+      const normalizedHeaders = headers.map(h => ({ raw: h, norm: normalizeHeaderName(h) }));
+      for (const alias of aliases) {
+        const normAlias = normalizeHeaderName(alias);
+        const exact = normalizedHeaders.find(h => h.norm === normAlias);
+        if (exact) return exact.raw;
       }
-      const titleStrategy = row.title_strategy?.trim() || "未分类";
-      const imageStyle = row.image_style?.trim() || "未分类";
+      for (const alias of aliases) {
+        const normAlias = normalizeHeaderName(alias);
+        const fuzzy = normalizedHeaders.find(h => h.norm.includes(normAlias) || normAlias.includes(h.norm));
+        if (fuzzy) return fuzzy.raw;
+      }
+      return '';
+    }
+
+    function buildFieldMap(headers) {
+      const map = {};
+      Object.entries(HEADER_ALIASES).forEach(([field, aliases]) => {
+        map[field] = findHeaderByAliases(headers, aliases);
+      });
+      return map;
+    }
+
+    function pickValue(row, key) {
+      if (!key) return '';
+      return row[key] ?? '';
+    }
+
+    function normalizeDateValue(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return null;
+      const cleaned = raw.replace(/\//g, '-').replace(/\./g, '-');
+      const d = new Date(cleaned);
+      if (isNaN(d.getTime())) return null;
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+
+    function normalizePostTypeValue(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return '普通帖';
+      if (raw.includes('秘闻')) return '秘闻帖';
+      if (raw.includes('包养')) return '包养帖';
+      if (raw.includes('普通') || raw.includes('web') || raw.includes('帖子') || raw.includes('文章') || raw.includes('会所') || raw.includes('认证')) return '普通帖';
+      return '普通帖';
+    }
+
+    function normalizePublishedValue(value) {
+      const raw = String(value ?? '').trim().toLowerCase();
+      if (raw === '') return 1;
+      if (['1', 'true', 'yes', 'y', 'success', 'ok'].includes(raw)) return 1;
+      if (['0', 'false', 'no', 'n'].includes(raw)) return 0;
+      if (raw.includes('成功') || raw.includes('上线') || raw.includes('已发布') || raw.includes('通过') || raw.includes('正常')) return 1;
+      if (raw.includes('失败') || raw.includes('驳回') || raw.includes('拒绝') || raw.includes('下线') || raw.includes('删除')) return 0;
+      if (raw.includes('待审核') || raw.includes('初始')) return 0;
+      return 1;
+    }
+
+    function collectImportWarnings(fieldMap, sampleRows) {
+      const warnings = [];
+      const missing = [];
+      ['date', 'post_id', 'title', 'views', 'comments'].forEach(field => {
+        if (!fieldMap[field]) missing.push(field);
+      });
+      if (missing.length) warnings.push(`未找到字段：${missing.join('、')}，已使用默认值或自动补齐。`);
+      if (!fieldMap.post_type) warnings.push('未找到“帖子类型”字段，已默认按“普通帖”导入。');
+      if (!fieldMap.is_published) warnings.push('未找到“发布状态”字段，已默认按“发布成功”导入。');
+      const strange = sampleRows.some(r => String(r[fieldMap.views] || '').trim() && isNaN(Number(String(r[fieldMap.views]).replace(/,/g, ''))));
+      if (fieldMap.views && strange) warnings.push('检测到浏览量列存在非数字内容，无法识别的值已按 0 处理。');
+      return warnings;
+    }
+
+    function normalizeRow(row, index = 0, fieldMap = {}) {
+      const date = normalizeDateValue(pickValue(row, fieldMap.date)) || new Date();
+      const postId = String(pickValue(row, fieldMap.post_id) || `AUTO_${index + 1}`).trim();
+      const title = String(pickValue(row, fieldMap.title) || `未命名帖子_${index + 1}`).trim();
+      const postType = normalizePostTypeValue(pickValue(row, fieldMap.post_type));
+      const titleStrategy = String(pickValue(row, fieldMap.title_strategy) || '未分类').trim() || '未分类';
+      const imageStyle = String(pickValue(row, fieldMap.image_style) || '未分类').trim() || '未分类';
+      const isPublished = normalizePublishedValue(pickValue(row, fieldMap.is_published));
+      const views = toNumber(String(pickValue(row, fieldMap.views)).replace(/,/g, ''));
+      const comments = toNumber(String(pickValue(row, fieldMap.comments)).replace(/,/g, ''));
+      const likes = toNumber(String(pickValue(row, fieldMap.likes)).replace(/,/g, ''));
+      const shares = toNumber(String(pickValue(row, fieldMap.shares)).replace(/,/g, ''));
+      const favorites = toNumber(String(pickValue(row, fieldMap.favorites)).replace(/,/g, ''));
+      const impressions = toNumber(String(pickValue(row, fieldMap.impressions)).replace(/,/g, ''));
+      const clicks = toNumber(String(pickValue(row, fieldMap.clicks)).replace(/,/g, ''));
+      const remarkPieces = [];
+      const remarkValue = String(pickValue(row, fieldMap.remark) || '').trim();
+      if (remarkValue) remarkPieces.push(remarkValue);
+      if (!fieldMap.views) remarkPieces.push('原表无浏览量');
+      if (!fieldMap.comments) remarkPieces.push('原表无评论量');
       return {
         date: formatDate(date),
-        post_id: row.post_id?.trim() || `AUTO_${index + 1}`,
-        title: row.title?.trim() || '未命名帖子',
+        post_id: postId,
+        title,
         post_type: postType,
         title_strategy: titleStrategy,
         image_style: imageStyle,
-        is_published: Number(isPublished),
-        views: toNumber(row.views),
-        comments: toNumber(row.comments),
-        likes: toNumber(row.likes),
-        shares: toNumber(row.shares),
-        favorites: toNumber(row.favorites),
-        impressions: toNumber(row.impressions),
-        clicks: toNumber(row.clicks),
-        ctr: toNumber(row.impressions) > 0 ? toNumber(row.clicks) / toNumber(row.impressions) : 0,
-        remark: row.remark?.trim() || '',
+        is_published: isPublished,
+        views,
+        comments,
+        likes,
+        shares,
+        favorites,
+        impressions,
+        clicks,
+        ctr: impressions > 0 ? clicks / impressions : 0,
+        remark: remarkPieces.join('；'),
       };
     }
 
-    function parseCSV(text) {
+function parseCSV(text) {
+      text = String(text || '').replace(/^﻿/, '');
       const rows = [];
       let row = [];
       let cell = '';
@@ -1087,10 +1194,18 @@
 
     function validateCSVHeaders(rows) {
       if (!rows.length) throw new Error('CSV 内容为空');
-      const required = ['date', 'post_id', 'title', 'post_type', 'is_published', 'views', 'comments'];
-      const headers = Object.keys(rows[0]);
-      const missing = required.filter(h => !headers.includes(h));
-      if (missing.length) throw new Error(`CSV 缺少必要字段：${missing.join(', ')}`);
+      return buildFieldMap(Object.keys(rows[0] || {}));
+    }
+
+    function importCSVRows(rows, fileName = '') {
+      const fieldMap = validateCSVHeaders(rows);
+      rawData = rows.map((r, idx) => normalizeRow(r, idx, fieldMap));
+      initFilterOptions();
+      resetFilters();
+      const warnings = collectImportWarnings(fieldMap, rows.slice(0, 10));
+      const matchedFields = Object.entries(fieldMap).filter(([, v]) => v).map(([k, v]) => `${k}←${v}`);
+      const summary = warnings.length ? `；${warnings.join(' ')}` : '';
+      setStatus(`导入成功：${fileName || 'CSV'}，共 ${rawData.length} 条。已自动识别字段 ${matchedFields.length} 个${summary}`, warnings.length ? 'warn' : 'good');
     }
 
     els.loadDemoBtn.addEventListener('click', () => {
@@ -1110,11 +1225,7 @@
       try {
         const text = await file.text();
         const rows = parseCSV(text);
-        validateCSVHeaders(rows);
-        rawData = rows.map((r, idx) => normalizeRow(r, idx));
-        initFilterOptions();
-        resetFilters();
-        setStatus(`导入成功，共读取 ${rawData.length} 条数据`, 'good');
+        importCSVRows(rows, file.name);
       } catch (err) {
         console.error(err);
         setStatus(err.message || 'CSV 导入失败', 'bad');
